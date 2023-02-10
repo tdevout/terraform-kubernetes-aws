@@ -1,0 +1,79 @@
+pipeline {
+    agent any
+    environment {
+      // Get the VM Credentials to use later in Pipeline.
+      USER_CREDENTIALS = credentials('vm-ending-with-138')
+      SONAR_KEY = credentials('sonarqube-cloudnative')
+      DEVEXKEY = credentials('devexpress-key')
+      // Copy Repo to this location 
+      COPY_DIR = '/tmp/cloudnativedotnet'
+    }
+    stages {
+
+        stage("SonarQube Analysis") {
+          steps {
+            withSonarQubeEnv("SonarQube") {
+              sh ''' 
+                export PATH=$PATH:$HOME/.dotnet/tools
+                dotnet test CloudAccelerator.sln /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
+                dotnet sonarscanner begin /k:"cloud-native-dotnet" /d:sonar.host.url="http://sonarqube:9000"  /d:sonar.login=$SONAR_KEY /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" /d:sonar.coverage.exclusions="**/**Test*.cs"
+                dotnet build CloudAccelerator.sln 
+                dotnet sonarscanner end /d:sonar.login=$SONAR_KEY 
+                 '''
+            }
+          }
+        }
+
+       // stage("Quality Gate") {
+         // steps {
+           // timeout(time: 2, unit: 'MINUTES') {
+             //   waitForQualityGate abortPipeline: true
+             // }
+         // }
+       // }
+
+         stage("Deploy to Develoment Server") {
+           when {
+             expression {
+               return env.GIT_BRANCH == "origin/ci_cd_dev_temp"
+             }
+		       } 
+           steps {
+             sh '''
+               ssh user@172.29.17.138 rm -rf $COPY_DIR
+               scp -r ${WORKSPACE} user@172.29.17.138:$COPY_DIR
+               ssh user@172.29.17.138 "
+               cd $COPY_DIR
+               echo $USER_CREDENTIALS_PSW | sudo -S docker-compose -f docker-compose.yml -f docker-compose.dev.yml build --no-cache --build-arg DEVEXKEY=$DEVEXKEY
+               echo $USER_CREDENTIALS_PSW | sudo -S docker-compose -f docker-compose.yml -f docker-compose.dev.yml -p damco---cloud-native-development-accelerators up --force-recreate -d"
+             '''
+           }
+         }
+        stage("Deploy to QA Server") {
+          when {
+            expression {
+              return env.GIT_BRANCH == "origin/ci_cd_qa"
+            }
+		      } 
+          steps {
+            sh '''
+              docker-compose -f docker-compose.yml -f docker-compose.qa.yml build --no-cache --build-arg DEVEXKEY=$DEVEXKEY
+              docker-compose -f docker-compose.yml -f docker-compose.qa.yml -p damco---cloud-native-development-accelerators up -d
+              '''
+          }
+        }
+
+     } 
+    post {
+      always {
+        cleanWs()
+      }
+      success {
+        emailext (attachLog: true, body: '${JOB_NAME} succeed.  Open ${BUILD_URL} to check for more details.', subject: '${BUILD_TAG} Succeed', to: 'meetv@damcogroup.com,sunilg@damcogroup.com')
+      }
+      failure {
+        emailext (attachLog: true, body: '${JOB_NAME} failed.  Open ${BUILD_URL} to check for more details.', subject: '${BUILD_TAG} Failed', to: 'meetv@damcogroup.com,sunilg@damcogroup.com')
+      }
+      
+    }
+  }
