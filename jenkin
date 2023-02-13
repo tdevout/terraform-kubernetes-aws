@@ -89,3 +89,27 @@ pipeline {
         }
     }
 }
+
+
+---
+
+pipeline {
+    agent any
+    stages {
+        stage('Test Email Configuration') {
+            steps {
+                script {
+                    def to = "recipient@example.com"
+                    def subject = "Test Email from Jenkins"
+                    def body = "This is a test email sent from Jenkins pipeline"
+                    def buildResult = currentBuild.currentResult
+                    if (buildResult == 'SUCCESS') {
+                        emailnotify to: "${to}", subject: "${subject}", body: "${body}",
+                                   replyTo: "${params.from}", mimeType: 'text/html'
+                    }
+                }
+            }
+        }
+    }
+}
+
