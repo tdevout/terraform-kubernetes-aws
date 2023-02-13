@@ -21,3 +21,71 @@ pipeline {
       
     }
 }
+
+
+
+---
+
+
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building the project...'
+            }
+        }
+        stage('Notify') {
+            steps {
+                script {
+                    def sendEmail(String recipient, String subject, String body, String smtpHost, int smtpPort, String smtpUser, String smtpPassword) {
+                        def mail = new EmailBuilder()
+                            .from("jenkins@example.com")
+                            .to(recipient)
+                            .subject(subject)
+                            .text(body)
+                            .smtp(host: smtpHost, port: smtpPort, username: smtpUser, password: smtpPassword)
+                            .build()
+                        mail.send()
+                    }
+
+                    sendEmail("recipient1@example.com", "Jenkins Build Result", "The Jenkins build has completed. Check the results for more details.", "smtp.example.com", 587, "jenkins", "password1")
+                    sendEmail("recipient2@example.com", "Jenkins Build Result", "The Jenkins build has completed. Check the results for more details.", "smtp.example.net", 465, "jenkins", "password2")
+                }
+            }
+        }
+    }
+}
+
+
+
+---
+
+
+pipeline {
+    agent any
+    parameters {
+        string(name: 'to', defaultValue: 'recipient@example.com', description: 'Email recipient')
+        string(name: 'from', defaultValue: 'sender@example.com', description: 'Email sender')
+    }
+    stages {
+        stage('Test Email Configuration') {
+            steps {
+                script {
+                    def mailer = new org.jenkinsci.plugins.mailer.DefaultMailer()
+                    def to = params.to
+                    def from = params.from
+                    def subject = "Test Email from Jenkins"
+                    def body = "This is a test email sent from Jenkins pipeline"
+
+                    boolean response = mailer.send(to, subject, body, from)
+                    if (response) {
+                        echo "Email sent successfully!"
+                    } else {
+                        echo "Failed to send email!"
+                    }
+                }
+            }
+        }
+    }
+}
