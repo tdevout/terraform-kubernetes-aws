@@ -1,0 +1,23 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Hello') {
+            steps {
+                echo 'Hello World'
+            }
+        }
+    }
+    post {
+      always {
+        cleanWs()
+      }
+      success {
+        emailext body: '${JOB_NAME} succeed', subject: 'Jenkins test', to: 'dharmik.thakkar@'
+      }
+      failure {
+        emailext (attachLog: true, body: '${JOB_NAME} failed.  Open ${BUILD_URL} to check for more details.', subject: '${BUILD_TAG} Failed', to: 'dharmik.thakkar@')
+      }
+      
+    }
+}
