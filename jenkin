@@ -1,4 +1,58 @@
+pipeline {
+  agent any
+  parameters {
+    choice(name: 'ENVIRONMENT', choices: ['prod', 'staging', 'dev'], description: 'Choose an environment')
+    string(name: 'NAME', defaultValue: 'world', description: 'Enter a name')
+  }
+  stages {
+    stage('Run Python Script') {
+      steps {
+        sh "python myscript.py ${params.ENVIRONMENT} ${params.NAME}"
+      }
+    }
+  }
+}
 
+
+
+import sys
+
+if len(sys.argv) != 3:
+  print('Usage: python myscript.py <environment> <name>')
+  sys.exit(1)
+
+environment = sys.argv[1]
+name = sys.argv[2]
+
+if environment == 'prod':
+  print(f'Hello, {name}! This is the production environment.')
+elif environment == 'staging':
+  print(f'Hello, {name}! This is the staging environment.')
+elif environment == 'dev':
+  print(f'Hello, {name}! This is the development environment.')
+else:
+  print('Invalid environment!')
+
+# do something else based on the environment and name
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----
 pipeline {
   agent any
   parameters {
