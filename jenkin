@@ -24,6 +24,24 @@ elif my_choice == 'Option 2':
 else:
   # do something else
 
+---
+import sys
+
+if len(sys.argv) != 2:
+  print('Usage: python myscript.py <fruit>')
+  sys.exit(1)
+
+fruit = sys.argv[1]
+
+if fruit == 'apple':
+  print('You chose an apple')
+elif fruit == 'banana':
+  print('You chose a banana')
+elif fruit == 'orange':
+  print('You chose an orange')
+else:
+  print(f'Unknown fruit: {fruit}')
+
 
 
 
