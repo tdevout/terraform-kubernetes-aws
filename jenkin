@@ -1,3 +1,41 @@
+
+pipeline {
+  agent any
+  parameters {
+    choice(name: 'MY_CHOICE', choices: ['Option 1', 'Option 2', 'Option 3'], description: 'Choose an option')
+  }
+  stages {
+    stage('Run Python Script') {
+      steps {
+        sh "python myscript.py ${params.MY_CHOICE}"
+      }
+    }
+  }
+}
+---
+import sys
+
+my_choice = sys.argv[1]
+
+if my_choice == 'Option 1':
+  # do something
+elif my_choice == 'Option 2':
+  # do something else
+else:
+  # do something else
+
+
+
+
+
+
+
+
+
+
+
+
+
 import jenkins.model.Jenkins
 
 def inst = Jenkins.getInstance()
