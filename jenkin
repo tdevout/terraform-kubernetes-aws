@@ -43,6 +43,20 @@ else:
   print(f'Unknown fruit: {fruit}')
 
 
+pipeline {
+  agent any
+  parameters {
+    choice(name: 'FRUIT', choices: ['apple', 'banana', 'orange'], description: 'Choose a fruit')
+  }
+  stages {
+    stage('Run Python Script') {
+      steps {
+        sh "python myscript.py ${params.FRUIT}"
+      }
+    }
+  }
+}
+
 
 
 
